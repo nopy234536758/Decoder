@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Décodeur Manuel - Compact</title>
+  <style>
+    /* Variables */
+    :root {
+      --bg-dark: #1e1e1e;
+      --box-bg: #3a3a3a;
+      --slot-bg: #555;
+      --text-color: #ffffff;
+      --accent-color: #4caf50;
+      --border-color: #cccccc;
+    }
+
+    /* Mise en page en grille */
+    body {
+      margin: 0;
+      padding: 10px;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-color);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 10px;
+      height: 100vh;
+    }
+
+    /* 4 zones */
+    #topLeft, #bottomLeft, #topRight, #bottomRight {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+
+    h3 {
+      margin: 5px 0;
+      font-size: 14px;
+      text-align: center;
+    }
+
+    /* Grilles internes */
+    .grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+    }
+
+    /* Styles des lettres et cases */
+    .box, .slot {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border-color);
+      border-radius: 3px;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .box {
+      background: var(--box-bg);
+      cursor: grab;
+    }
+    .box:active {
+      cursor: grabbing;
+      transform: scale(1.05);
+    }
+    .slot {
+      background: var(--slot-bg);
+      cursor: pointer;
+      position: relative;
+    }
+    .slot:hover {
+      background: var(--box-bg);
+    }
+
+    /* Zone de texte */
+    #inputText {
+      width: 100%;
+      height: 60px;
+      background: var(--box-bg);
+      color: var(--text-color);
+      border: none;
+      border-radius: 3px;
+      padding: 5px;
+      font-size: 12px;
+      resize: none;
+      margin-bottom: 5px;
+    }
+    #decodedText {
+      background: var(--slot-bg);
+      min-height: 60px;
+      border-radius: 3px;
+      padding: 5px;
+      font-size: 12px;
+      font-weight: bold;
+      overflow-y: auto;
+      word-wrap: break-word;
+      flex: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto auto;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Quadrant Haut Gauche : Lettres et Cases -->
+  <div id="topLeft">
+    <h3>Lettres et Cases</h3>
+    <div class="grid" id="slots"></div>
+  </div>
+
+  <!-- Quadrant Bas Gauche : Blocs de Lettres (UNE SEULE FOIS) -->
+  <div id="bottomLeft">
+    <h3>Blocs de Lettres</h3>
+    <div class="grid" id="blocks"></div>
+  </div>
+
+  <!-- Quadrant Haut Droit : Texte à coller -->
+  <div id="topRight">
+    <h3>Collez votre texte</h3>
+    <textarea id="inputText" placeholder="Collez votre texte ici..." oninput="updateDecodedText()"></textarea>
+  </div>
+
+  <!-- Quadrant Bas Droit : Texte décodé -->
+  <div id="bottomRight">
+    <h3>Texte Décodé</h3>
+    <div id="decodedText">Votre texte décodé s'affichera ici...</div>
+  </div>
+
+  <script>
+    const slots = document.getElementById("slots");
+    const blocks = document.getElementById("blocks");
+    const decodedText = document.getElementById("decodedText");
+    const inputText = document.getElementById("inputText");
+
+    let mappings = {};
+    let blockLocations = {};
+
+    function createAlphabetGrid() {
+      slots.innerHTML = "";
+      blocks.innerHTML = "";
+      mappings = {};
+      blockLocations = {};
+
+      for (let i = 65; i <= 90; i++) {
+        let letter = String.fromCharCode(i);
+        mappings[letter] = letter;
+
+        let container = document.createElement("div");
+        container.classList.add("slot-container");
+
+        let label = document.createElement("div");
+        label.classList.add("box");
+        label.innerText = letter;
+
+        let slot = document.createElement("div");
+        slot.classList.add("slot");
+        slot.dataset.letter = letter;
+        slot.innerText = "?";
+        slot.addEventListener("dragover", dragOver);
+        slot.addEventListener("drop", drop);
+        slot.addEventListener("click", removeBlock);
+
+        container.appendChild(label);
+        container.appendChild(slot);
+        slots.appendChild(container);
+
+        // UNE SEULE FOIS chaque lettre en bloc
+        let block = document.createElement("div");
+        block.classList.add("box");
+        block.innerText = letter;
+        block.draggable = true;
+        block.id = "block-" + letter;
+        block.addEventListener("dragstart", dragStart);
+        blocks.appendChild(block);
+      }
+    }
+
+    function dragStart(e) {
+      e.dataTransfer.setData("text", e.target.innerText);
+    }
+
+    function dragOver(e) {
+      e.preventDefault();
+    }
+
+    function drop(e) {
+      e.preventDefault();
+      let letter = e.dataTransfer.getData("text");
+      let targetLetter = e.target.dataset.letter;
+      if (letter && targetLetter) {
+        let previousSlot = blockLocations[letter];
+        if (previousSlot) {
+          previousSlot.innerText = "?";
+          mappings[previousSlot.dataset.letter] = previousSlot.dataset.letter;
+        }
+        e.target.innerText = letter;
+        mappings[targetLetter] = letter;
+        blockLocations[letter] = e.target;
+        updateDecodedText();
+      }
+    }
+
+    function removeBlock(e) {
+      let targetLetter = e.target.dataset.letter;
+      let currentLetter = e.target.innerText;
+      if (currentLetter !== "?") {
+        mappings[targetLetter] = targetLetter;
+        e.target.innerText = "?";
+        delete blockLocations[currentLetter];
+        updateDecodedText();
+      }
+    }
+
+    function updateDecodedText() {
+      let text = inputText.value.toUpperCase();
+      let decoded = "";
+      for (let char of text) {
+        if (mappings[char] && mappings[char] !== char) {
+          decoded += `<span style="color: var(--accent-color);">${mappings[char]}</span>`;
+        } else {
+          decoded += char;
+        }
+      }
+      decodedText.innerHTML = decoded || "Votre texte décodé s'affichera ici...";
+    }
+
+    createAlphabetGrid();
+  </script>
+</body>
+</html>
