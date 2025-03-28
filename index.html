@@ -1,247 +1,381 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Décodeur Manuel - Compact</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Décodeur Pro</title>
   <style>
-    /* Variables */
     :root {
-      --bg-dark: #1e1e1e;
-      --box-bg: #3a3a3a;
-      --slot-bg: #555;
-      --text-color: #ffffff;
-      --accent-color: #4caf50;
-      --border-color: #cccccc;
+      --bg-dark: #121212;
+      --box-bg: #2c2c2c;
+      --slot-bg: #3a3a3a;
+      --text-color: #e0e0e0;
+      --accent-color: #80cbc4;
+      --border-color: #616161;
+      --transition-speed: 0.3s;
     }
 
-    /* Mise en page en grille */
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       padding: 10px;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: var(--bg-dark);
       color: var(--text-color);
       display: grid;
       grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
+      grid-template-rows: auto auto auto;
       gap: 10px;
-      height: 100vh;
+      touch-action: manipulation;
+      transition: background var(--transition-speed);
     }
 
-    /* 4 zones */
-    #topLeft, #bottomLeft, #topRight, #bottomRight {
-      display: flex;
-      flex-direction: column;
+    .grid-section {
       padding: 10px;
+      min-height: 200px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
 
     h3 {
       margin: 5px 0;
-      font-size: 14px;
+      text-align: center;
+      font-size: 0.95em;
+      font-weight: 500;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 5px;
+      margin: 5px 0;
+    }
+
+    .slot-container {
+      position: relative;
       text-align: center;
     }
 
-    /* Grilles internes */
-    .grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      justify-content: center;
+    .slot-label {
+      display: block;
+      width: 100%;
+      text-align: center;
+      font-size: 0.8em;
+      color: #aaa;
+      position: absolute;
+      top: -18px;
+      left: 0;
     }
 
-    /* Styles des lettres et cases */
     .box, .slot {
-      width: 30px;
-      height: 30px;
+      width: 35px;
+      height: 35px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--border-color);
-      border-radius: 3px;
-      font-size: 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 5px;
+      font-size: 16px;
       font-weight: bold;
-      transition: background 0.2s, transform 0.2s;
+      user-select: none;
+      transition: all var(--transition-speed);
+      margin-top: 10px;
     }
 
     .box {
       background: var(--box-bg);
-      cursor: grab;
+      cursor: move;
     }
-    .box:active {
-      cursor: grabbing;
-      transform: scale(1.05);
-    }
+
     .slot {
       background: var(--slot-bg);
-      cursor: pointer;
-      position: relative;
-    }
-    .slot:hover {
-      background: var(--box-bg);
     }
 
-    /* Zone de texte */
+    .box.dragging {
+      opacity: 0.5;
+    }
+
     #inputText {
       width: 100%;
-      height: 60px;
+      height: 70px;
       background: var(--box-bg);
       color: var(--text-color);
-      border: none;
-      border-radius: 3px;
-      padding: 5px;
-      font-size: 12px;
+      border: 1px solid var(--border-color);
+      padding: 8px;
       resize: none;
-      margin-bottom: 5px;
-    }
-    #decodedText {
-      background: var(--slot-bg);
-      min-height: 60px;
-      border-radius: 3px;
-      padding: 5px;
-      font-size: 12px;
-      font-weight: bold;
-      overflow-y: auto;
-      word-wrap: break-word;
-      flex: 1;
+      border-radius: 5px;
+      transition: background var(--transition-speed), border var(--transition-speed);
     }
 
-    /* Responsive */
-    @media (max-width: 600px) {
-      body {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto auto;
-        height: auto;
-      }
+    #inputText:focus {
+      outline: none;
+      border-color: var(--accent-color);
+    }
+
+    #decodedText {
+      background: var(--slot-bg);
+      height: 70px;
+      padding: 8px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+    }
+
+    .controls {
+      grid-column: span 2;
+      display: flex;
+      gap: 10px;
+      padding: 5px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    button, .cesar-control {
+      flex: 1;
+      padding: 8px;
+      background: var(--accent-color);
+      border: none;
+      color: var(--bg-dark);
+      border-radius: 5px;
+      cursor: pointer;
+      min-width: 120px;
+      font-weight: 600;
+      transition: background var(--transition-speed), transform var(--transition-speed);
+    }
+
+    button:hover, .cesar-control:hover {
+      background: #66d3bf;
+      transform: scale(1.02);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      margin-top: 5px;
+      -webkit-appearance: none;
+      background: transparent;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: var(--accent-color);
+      cursor: pointer;
+      margin-top: -5px;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 6px;
+      background: var(--border-color);
+      border-radius: 3px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Quadrant Haut Gauche : Lettres et Cases -->
-  <div id="topLeft">
-    <h3>Lettres et Cases</h3>
+  <!-- Contrôles -->
+  <div class="controls">
+    <div class="cesar-control">
+      César: <span id="shiftValue">0</span>
+      <input type="range" id="cesarShift" min="-13" max="13" value="0">
+    </div>
+    <button onclick="applyAtbash()">Atbash</button>
+    <button onclick="clearAll()">Tout supprimer</button>
+  </div>
+
+  <!-- Lettres et Cases -->
+  <div class="grid-section">
+    <h3>Correspondances</h3>
     <div class="grid" id="slots"></div>
   </div>
 
-  <!-- Quadrant Bas Gauche : Blocs de Lettres (UNE SEULE FOIS) -->
-  <div id="bottomLeft">
-    <h3>Blocs de Lettres</h3>
+  <!-- Blocs de Lettres -->
+  <div class="grid-section">
+    <h3>Lettres disponibles</h3>
     <div class="grid" id="blocks"></div>
   </div>
 
-  <!-- Quadrant Haut Droit : Texte à coller -->
-  <div id="topRight">
-    <h3>Collez votre texte</h3>
+  <!-- Zone de texte -->
+  <div style="grid-column: span 2">
+    <h3>Texte à décoder</h3>
     <textarea id="inputText" placeholder="Collez votre texte ici..." oninput="updateDecodedText()"></textarea>
+    <h3>Résultat</h3>
+    <div id="decodedText"></div>
   </div>
 
-  <!-- Quadrant Bas Droit : Texte décodé -->
-  <div id="bottomRight">
-    <h3>Texte Décodé</h3>
-    <div id="decodedText">Votre texte décodé s'affichera ici...</div>
-  </div>
+<script>
+let mappings = {};
+const blocksMap = {};
+let currentShift = 0;
 
-  <script>
-    const slots = document.getElementById("slots");
-    const blocks = document.getElementById("blocks");
-    const decodedText = document.getElementById("decodedText");
-    const inputText = document.getElementById("inputText");
+function createAlphabetGrid() {
+  const slots = document.getElementById('slots');
+  const blocks = document.getElementById('blocks');
+  
+  // Création des slots
+  for(let i = 65; i <= 90; i++) {
+    const letter = String.fromCharCode(i);
+    
+    // Slot
+    const container = document.createElement('div');
+    container.className = 'slot-container';
+    
+    const label = document.createElement('div');
+    label.className = 'slot-label';
+    label.textContent = letter;
+    
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    slot.dataset.original = letter;
+    slot.textContent = '?';
+    slot.ondragover = allowDrop;
+    slot.ondrop = drop;
+    
+    container.appendChild(label);
+    container.appendChild(slot);
+    slots.appendChild(container);
 
-    let mappings = {};
-    let blockLocations = {};
+    // Block
+    const block = document.createElement('div');
+    block.className = 'box';
+    block.textContent = letter;
+    block.dataset.letter = letter;
+    block.draggable = true;
+    block.ondragstart = drag;
+    block.ondragend = dragEnd;
+    blocks.appendChild(block);
+    blocksMap[letter] = block;
+  }
+}
 
-    function createAlphabetGrid() {
-      slots.innerHTML = "";
-      blocks.innerHTML = "";
-      mappings = {};
-      blockLocations = {};
+function allowDrop(ev) {
+  ev.preventDefault();
+}
 
-      for (let i = 65; i <= 90; i++) {
-        let letter = String.fromCharCode(i);
-        mappings[letter] = letter;
+function drag(ev) {
+  ev.dataTransfer.setData("text", ev.target.dataset.letter);
+  ev.target.classList.add('dragging');
+}
 
-        let container = document.createElement("div");
-        container.classList.add("slot-container");
+function dragEnd(ev) {
+  ev.target.classList.remove('dragging');
+}
 
-        let label = document.createElement("div");
-        label.classList.add("box");
-        label.innerText = letter;
-
-        let slot = document.createElement("div");
-        slot.classList.add("slot");
-        slot.dataset.letter = letter;
-        slot.innerText = "?";
-        slot.addEventListener("dragover", dragOver);
-        slot.addEventListener("drop", drop);
-        slot.addEventListener("click", removeBlock);
-
-        container.appendChild(label);
-        container.appendChild(slot);
-        slots.appendChild(container);
-
-        // UNE SEULE FOIS chaque lettre en bloc
-        let block = document.createElement("div");
-        block.classList.add("box");
-        block.innerText = letter;
-        block.draggable = true;
-        block.id = "block-" + letter;
-        block.addEventListener("dragstart", dragStart);
-        blocks.appendChild(block);
-      }
+function drop(ev) {
+  ev.preventDefault();
+  const data = ev.dataTransfer.getData("text");
+  const slot = ev.target.closest('.slot');
+  
+  if (slot && data) {
+    // Retirer l'ancienne association
+    const previousSlot = document.querySelector(`.slot[data-current="${data}"]`);
+    if (previousSlot) {
+      previousSlot.textContent = '?';
+      previousSlot.removeAttribute('data-current');
     }
+    
+    // Mettre à jour la nouvelle association
+    slot.textContent = data;
+    slot.dataset.current = data;
+    updateMappings();
+    updateBlocksVisibility();
+  }
+}
 
-    function dragStart(e) {
-      e.dataTransfer.setData("text", e.target.innerText);
-    }
+function updateMappings() {
+  document.querySelectorAll('.slot').forEach(slot => {
+    mappings[slot.dataset.original] = slot.textContent;
+  });
+  updateDecodedText();
+}
 
-    function dragOver(e) {
-      e.preventDefault();
-    }
+function updateBlocksVisibility() {
+  document.querySelectorAll('.box').forEach(block => {
+    block.hidden = document.querySelector(`.slot[data-current="${block.dataset.letter}"]`);
+  });
+}
 
-    function drop(e) {
-      e.preventDefault();
-      let letter = e.dataTransfer.getData("text");
-      let targetLetter = e.target.dataset.letter;
-      if (letter && targetLetter) {
-        let previousSlot = blockLocations[letter];
-        if (previousSlot) {
-          previousSlot.innerText = "?";
-          mappings[previousSlot.dataset.letter] = previousSlot.dataset.letter;
-        }
-        e.target.innerText = letter;
-        mappings[targetLetter] = letter;
-        blockLocations[letter] = e.target;
-        updateDecodedText();
-      }
-    }
+function updateDecodedText() {
+  const input = document.getElementById('inputText').value.toUpperCase();
+  let output = '';
+  
+  for(const char of input) {
+    const decoded = mappings[char] || char;
+    output += decoded === char ? char : `<span style="color: var(--accent-color)">${decoded}</span>`;
+  }
+  
+  document.getElementById('decodedText').innerHTML = output || '...';
+}
 
-    function removeBlock(e) {
-      let targetLetter = e.target.dataset.letter;
-      let currentLetter = e.target.innerText;
-      if (currentLetter !== "?") {
-        mappings[targetLetter] = targetLetter;
-        e.target.innerText = "?";
-        delete blockLocations[currentLetter];
-        updateDecodedText();
-      }
-    }
+// Système César dynamique
+document.getElementById('cesarShift').addEventListener('input', function(e) {
+  currentShift = parseInt(e.target.value);
+  document.getElementById('shiftValue').textContent = currentShift;
+  applyCesar(currentShift);
+});
 
-    function updateDecodedText() {
-      let text = inputText.value.toUpperCase();
-      let decoded = "";
-      for (let char of text) {
-        if (mappings[char] && mappings[char] !== char) {
-          decoded += `<span style="color: var(--accent-color);">${mappings[char]}</span>`;
-        } else {
-          decoded += char;
-        }
-      }
-      decodedText.innerHTML = decoded || "Votre texte décodé s'affichera ici...";
-    }
+function applyCesar(shift) {
+  clearAll();
+  for(let i = 65; i <= 90; i++) {
+    const original = String.fromCharCode(i);
+    const target = String.fromCharCode(((i - 65 + shift + 26) % 26) + 65);
+    const slot = document.querySelector(`.slot[data-original="${original}"]`);
+    slot.textContent = target;
+    slot.dataset.current = target;
+  }
+  updateMappings();
+  updateBlocksVisibility();
+}
 
-    createAlphabetGrid();
-  </script>
+// Correction du bouton Atbash : applique le chiffrement Atbash (A <-> Z, B <-> Y, etc.)
+function applyAtbash() {
+  clearAll();
+  for(let i = 65; i <= 90; i++) {
+    const original = String.fromCharCode(i);
+    const target = String.fromCharCode(90 - (i - 65));
+    const slot = document.querySelector(`.slot[data-original="${original}"]`);
+    slot.textContent = target;
+    slot.dataset.current = target;
+  }
+  updateMappings();
+  updateBlocksVisibility();
+}
+
+function clearAll() {
+  document.querySelectorAll('.slot').forEach(slot => {
+    slot.textContent = '?';
+    slot.removeAttribute('data-current');
+  });
+  updateMappings();
+  updateBlocksVisibility();
+}
+
+// Gestion tactile
+document.addEventListener('touchstart', e => {
+  if(e.target.classList.contains('box')) {
+    e.target.dataset.touch = true;
+  }
+}, {passive: true});
+
+document.addEventListener('touchend', e => {
+  const block = document.querySelector('[data-touch="true"]');
+  if(block && e.target.classList.contains('slot')) {
+    block.dataset.touch = false;
+    drop({
+      preventDefault: () => {},
+      target: e.target,
+      dataTransfer: { getData: () => block.dataset.letter }
+    });
+  }
+});
+
+// Initialisation
+createAlphabetGrid();
+</script>
 </body>
 </html>
